@@ -8,6 +8,12 @@ Shell environment switcher for Claude Code accounts.
 - `claudenv.sh` targets bash 3.2+ and zsh 5+; arrays, `select`, and `< <(...)` are intentional.
 - No external dependencies. No build step.
 
+## GitHub Actions constraints
+
+- **Do not pin actions to commit SHAs.** Use semver tags (e.g. `@v2`, `@v6`). Dependabot keeps tags current.
+- **Do not replace apt-installed tools with pinned binary downloads** in `Dockerfile.dev` (e.g. shellcheck stays as `apt-get install shellcheck`).
+- **Do not add update-type guards to `dependabot-automerge.yml`.** All dependabot PRs are auto-merged, not just patch bumps.
+
 ## Testing
 
 ```sh
