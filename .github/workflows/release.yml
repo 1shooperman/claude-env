@@ -25,11 +25,12 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@v2
         with:
-          egress-policy: audit
+          egress-policy: enforce
           allowed-endpoints: >
             api.github.com:443
             github.com:443
             objects.githubusercontent.com:443
+            uploads.github.com:443
 
       - uses: actions/checkout@v6
         with:
@@ -55,6 +56,22 @@ jobs:
 
           echo "version=v${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
 
+      - name: Generate release artifacts
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          STAGING=$(mktemp -d)
+
+          # Version-stamp a copy of install.sh for the release asset.
+          # The working-tree install.sh stays at "main" and is never committed.
+          sed "s|^CLAUDENV_VERSION=.*|CLAUDENV_VERSION=\"${VERSION}\"|" \
+            install.sh > "${STAGING}/install.sh"
+
+          # Generate SHA256SUMS using just filenames (no path prefixes).
+          sha256sum claudenv.sh > "${STAGING}/SHA256SUMS"
+          (cd "${STAGING}" && sha256sum install.sh >> SHA256SUMS)
+
+          echo "STAGING=${STAGING}" >> "$GITHUB_ENV"
+
       - name: Tag and push
         run: |
           git config user.name  "github-actions[bot]"
@@ -64,8 +81,12 @@ jobs:
 
       - name: Create GitHub release
         run: |
-          gh release create "${{ steps.version.outputs.version }}" \
-            --title "Release ${{ steps.version.outputs.version }}" \
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release create "${VERSION}" \
+            claudenv.sh \
+            "${STAGING}/install.sh" \
+            "${STAGING}/SHA256SUMS" \
+            --title "Release ${VERSION}" \
             --generate-notes \
             --verify-tag
         env:

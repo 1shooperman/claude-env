@@ -12,7 +12,7 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@v2
         with:
-          egress-policy: audit  # switch to 'enforce' after verifying the allowlist
+          egress-policy: enforce
           allowed-endpoints: >
             github.com:443
             objects.githubusercontent.com:443
@@ -36,7 +36,7 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@v2
         with:
-          egress-policy: audit
+          egress-policy: enforce
           allowed-endpoints: >
             github.com:443
             objects.githubusercontent.com:443
