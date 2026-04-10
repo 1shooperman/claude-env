@@ -20,7 +20,7 @@ wget -qO- https://raw.githubusercontent.com/1shooperman/claude-env/main/install.
 
 **Specific version** (includes SHA256 integrity check):
 ```sh
-curl -o- https://github.com/1shooperman/claude-env/releases/download/v0.1.0/install.sh | sh
+curl -o- https://github.com/1shooperman/claude-env/releases/download/v0.1.2/install.sh | sh
 ```
 
 **From a local clone:**
@@ -29,7 +29,9 @@ git clone git@github.com:1shooperman/claude-env.git
 sh claude-env/install.sh
 ```
 
-After installing, reload your shell:
+> **Note:** Piped installs (curl/wget) are non-interactive and skip shell profile wiring. The installer prints the two lines to add manually — follow those instructions, then reload your shell. Local installs (`sh install.sh`) prompt you before writing to your profile.
+
+After wiring your profile, reload your shell:
 ```sh
 source ~/.zshrc   # or ~/.bashrc
 ```
@@ -40,7 +42,7 @@ source ~/.zshrc   # or ~/.bashrc
 ln -s "$HOME/.claudenv/claudenv.sh" "$HOME/.oh-my-zsh/custom/claudenv.zsh"
 ```
 
-Then remove the `# claudenv` block that `install.sh` added to `~/.zshrc` to avoid double-sourcing.
+If you previously ran a local install and answered yes to the profile prompt, remove the `# claudenv` block from `~/.zshrc` to avoid double-sourcing.
 
 ---
 
@@ -61,6 +63,8 @@ Each env is a directory under `~/.claudenv/envs/<name>/`. Activating an env sets
 | `claudenv deactivate` | Deactivate the current env |
 | `claudenv config [name]` | Create a new env |
 | `claudenv list` | List all envs (`*` marks the active one) |
+| `claudenv remove <name>` | Delete an env |
+| `claudenv uninstall` | Remove claudenv and clean up shell profile |
 
 ---
 

@@ -54,11 +54,11 @@ teardown() {
   grep -qF '# claudenv' "$HOME/.zshrc"
 }
 
-@test "rc-prompt: defaults to yes when stdin is not a TTY" {
+@test "rc-prompt: defaults to no when stdin is not a TTY" {
   unset CLAUDENV_INSTALL_CONFIRM
   run sh "$INSTALL_SH"
   [ "$status" -eq 0 ]
-  grep -qF '# claudenv' "$HOME/.zshrc"
+  ! grep -qF '# claudenv' "$HOME/.zshrc" 2>/dev/null
 }
 
 @test "rc-prompt: does not duplicate when marker already present" {

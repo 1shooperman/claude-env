@@ -17,6 +17,7 @@ claudenv() {
     list)       _claudenv_list ;;
     remove)     _claudenv_remove "${2:-}" ;;
     version)    _claudenv_version ;;
+    uninstall)  _claudenv_uninstall ;;
     "")         _claudenv_pick ;;
     *)          _claudenv_activate "$1" ;;
   esac
@@ -271,4 +272,46 @@ _claudenv_version() {
   else
     printf 'unknown (reinstall via install.sh to record version)\n'
   fi
+}
+
+# ── Uninstall ─────────────────────────────────────────────────────────────────
+
+_claudenv_uninstall() {
+  printf 'This will remove %s and the claudenv block from your shell profile.\n' "$CLAUDENV_HOME"
+  printf 'Uninstall? [y/N] '
+  read -r yn
+  case "$yn" in
+    [Yy]*) ;;
+    *) printf 'Cancelled.\n'; return 0 ;;
+  esac
+
+  [ -n "${CLAUDENV_ACTIVE:-}" ] && _claudenv_deactivate --quiet
+
+  rm -rf "$CLAUDENV_HOME"
+  printf 'Removed %s\n' "$CLAUDENV_HOME"
+
+  local rc
+  if [ -n "${ZSH_VERSION:-}" ] || [ "$(basename "${SHELL:-sh}")" = "zsh" ]; then
+    rc="$HOME/.zshrc"
+  else
+    rc="$HOME/.bashrc"
+  fi
+
+  if [ -f "$rc" ] && grep -qF '# claudenv' "$rc"; then
+    local tmp
+    tmp="$(mktemp)"
+    awk '/^# claudenv$/{skip=3} skip>0{skip--; next} 1' "$rc" > "$tmp" && mv "$tmp" "$rc"
+    printf 'Removed claudenv block from %s\n' "$rc"
+  fi
+
+  unset -f claudenv \
+    _claudenv_activate _claudenv_deactivate \
+    _claudenv_prompt_hook _claudenv_prompt_on _claudenv_prompt_off \
+    _claudenv_list_names _claudenv_list _claudenv_pick \
+    _claudenv_config _claudenv_remove _claudenv_version \
+    _claudenv_uninstall 2>/dev/null || true
+
+  unset CLAUDENV_HOME CLAUDENV_ACTIVE _CLAUDENV_OLD_CLAUDE_CONFIG_DIR _CLAUDENV_OLD_PS1
+
+  printf 'claudenv uninstalled. Open a new shell to finish.\n'
 }
