@@ -12,7 +12,7 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@v2
         with:
-          egress-policy: enforce
+          egress-policy: block
           allowed-endpoints: >
             github.com:443
             objects.githubusercontent.com:443
@@ -36,7 +36,7 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@v2
         with:
-          egress-policy: enforce
+          egress-policy: block
           allowed-endpoints: >
             github.com:443
             objects.githubusercontent.com:443
