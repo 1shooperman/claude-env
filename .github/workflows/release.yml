@@ -25,7 +25,7 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@v2
         with:
-          egress_policy: audit
+          egress-policy: audit
           allowed-endpoints: >
             api.github.com:443
             github.com:443
@@ -55,31 +55,12 @@ jobs:
 
           echo "version=v${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
 
-      - name: Embed version in install.sh and tag
+      - name: Tag and push
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Pin the version in install.sh so the tagged script downloads the
-          # matching claudenv.sh (same pattern as nvm's install script).
-          sed -i "s|^CLAUDENV_VERSION=.*|CLAUDENV_VERSION=\"${VERSION}\"|" install.sh
-          git add install.sh
-          git commit -m "chore: release ${VERSION}"
-          git push origin main
-
-          git tag "${VERSION}"
-          git push origin "${VERSION}"
-
-      - name: Reset install.sh to development version
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-
-          sed -i 's|^CLAUDENV_VERSION=.*|CLAUDENV_VERSION="main"|' install.sh
-          git add install.sh
-          git commit -m "chore: restore development version after ${VERSION}"
-          git push origin main
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
 
       - name: Create GitHub release
         run: |
