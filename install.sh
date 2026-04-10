@@ -145,12 +145,30 @@ else
   CLAUDENV_HOME_LINE="export CLAUDENV_HOME=\"${CLAUDENV_HOME}\""
 fi
 
-if grep -qF "$MARKER" "$RC" 2>/dev/null; then
-  printf 'claudenv: already present in %s — skipping.\n' "$RC"
+if [ -n "${CLAUDENV_INSTALL_CONFIRM+x}" ]; then
+  _install_rc="$CLAUDENV_INSTALL_CONFIRM"
+elif [ -t 0 ]; then
+  printf 'Install to %s? [Y/n] ' "$RC"
+  read -r _install_rc
 else
-  printf '\n%s\n%s\n%s\n' "$MARKER" "$CLAUDENV_HOME_LINE" "$SOURCE_LINE" >> "$RC"
-  printf 'Added claudenv to %s\n' "$RC"
+  _install_rc=""
 fi
+
+case "$_install_rc" in
+  [Nn]*)
+    printf 'Skipping shell profile wiring. To set up manually, add to %s:\n' "$RC"
+    printf '  %s\n' "$CLAUDENV_HOME_LINE"
+    printf '  %s\n' "$SOURCE_LINE"
+    ;;
+  *)
+    if grep -qF "$MARKER" "$RC" 2>/dev/null; then
+      printf 'claudenv: already present in %s — skipping.\n' "$RC"
+    else
+      printf '\n%s\n%s\n%s\n' "$MARKER" "$CLAUDENV_HOME_LINE" "$SOURCE_LINE" >> "$RC"
+      printf 'Added claudenv to %s\n' "$RC"
+    fi
+    ;;
+esac
 
 printf '\nDone. Reload your shell:\n'
 printf '  source %s\n\n' "$RC"
