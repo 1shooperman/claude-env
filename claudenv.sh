@@ -151,9 +151,10 @@ _claudenv_list() {
 
 _claudenv_pick() {
   local envs=()
-  local name
+  local name first=""
 
   while IFS= read -r name; do
+    [ -z "$first" ] && first="$name"
     envs+=("$name")
   done < <(_claudenv_list_names)
 
@@ -163,7 +164,7 @@ _claudenv_pick() {
   fi
 
   if [ "${#envs[@]}" -eq 1 ]; then
-    _claudenv_activate "${envs[0]}"
+    _claudenv_activate "$first"
     return
   fi
 
@@ -197,7 +198,11 @@ _claudenv_config() {
   local env_dir="$CLAUDENV_HOME/envs/$name"
 
   if [ -d "$env_dir" ]; then
-    printf 'claudenv: env "%s" already exists at %s\n' "$name" "$env_dir" >&2; return 1
+    printf 'claudenv: env "%s" already exists at %s\n' "$name" "$env_dir"
+    printf 'Activate now? [y/N] '
+    read -r yn
+    case "$yn" in [Yy]*) _claudenv_activate "$name" ;; esac
+    return
   fi
 
   mkdir -p "$env_dir"
