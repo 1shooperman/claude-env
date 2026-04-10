@@ -19,7 +19,7 @@ jobs:
             azure.archive.ubuntu.com:80
             security.ubuntu.com:80
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install ShellCheck
         run: sudo apt-get install -y shellcheck
@@ -41,7 +41,7 @@ jobs:
             github.com:443
             objects.githubusercontent.com:443
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install bats-core
         run: |
