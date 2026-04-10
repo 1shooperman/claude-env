@@ -5,6 +5,8 @@ setup() {
   export CLAUDENV_HOME
   CLAUDENV_HOME="$(mktemp -d)"
   mkdir -p "$CLAUDENV_HOME/envs"
+  # Mimic install.sh: the "default" env always exists after installation.
+  mkdir -p "$CLAUDENV_HOME/envs/default"
   # shellcheck disable=SC1091
   source "$BATS_TEST_DIRNAME/../claudenv.sh"
 }
@@ -147,6 +149,7 @@ teardown() {
 }
 
 @test "list: shows message when no envs exist" {
+  rm -rf "$CLAUDENV_HOME/envs/default"
   run _claudenv_list
   [ "$status" -eq 0 ]
   [[ "$output" == *"No envs"* ]]
@@ -182,6 +185,59 @@ teardown() {
 @test "remove: fails for nonexistent env" {
   run _claudenv_remove "ghost"
   [ "$status" -eq 1 ]
+}
+
+# ── default env ───────────────────────────────────────────────────────────────
+
+@test "default: activate sets CLAUDE_CONFIG_DIR to ~/.claude" {
+  _claudenv_activate "default"
+  [ "$CLAUDE_CONFIG_DIR" = "$HOME/.claude" ]
+}
+
+@test "default: activate sets CLAUDENV_ACTIVE" {
+  _claudenv_activate "default"
+  [ "$CLAUDENV_ACTIVE" = "default" ]
+}
+
+@test "default: deactivate restores original CLAUDE_CONFIG_DIR" {
+  export CLAUDE_CONFIG_DIR="/original"
+  _claudenv_activate "default"
+  _claudenv_deactivate
+  [ "$CLAUDE_CONFIG_DIR" = "/original" ]
+}
+
+@test "default: config rejects reserved name" {
+  run _claudenv_config "default"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"reserved"* ]]
+}
+
+@test "default: remove rejects reserved name" {
+  run _claudenv_remove "default"
+  [ "$status" -eq 1 ]
+  [ -d "$CLAUDENV_HOME/envs/default" ]
+}
+
+@test "default: list annotates with (~/.claude)" {
+  run _claudenv_list
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"default"*"~/.claude"* ]]
+}
+
+@test "default: list marks active default with asterisk" {
+  _claudenv_activate "default"
+  run _claudenv_list
+  [[ "$output" == *"* default"* ]]
+}
+
+@test "default: swap from named env preserves original CLAUDE_CONFIG_DIR" {
+  export CLAUDE_CONFIG_DIR="/original"
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  _claudenv_activate "work"
+  _claudenv_activate "default"
+  [ "$CLAUDE_CONFIG_DIR" = "$HOME/.claude" ]
+  _claudenv_deactivate
+  [ "$CLAUDE_CONFIG_DIR" = "/original" ]
 }
 
 # ── version ───────────────────────────────────────────────────────────────────

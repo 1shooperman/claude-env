@@ -82,6 +82,9 @@ printf 'Installing claudenv %s to %s...\n' "$CLAUDENV_VERSION" "$CLAUDENV_HOME"
 
 mkdir -p "$CLAUDENV_HOME/envs"
 
+# Create the built-in "default" env that maps back to ~/.claude.
+mkdir -p "$CLAUDENV_HOME/envs/default"
+
 if _claudenv_is_remote; then
   if [ "$CLAUDENV_VERSION" = "main" ]; then
     printf 'Downloading claudenv.sh from GitHub (main branch)...\n'
@@ -142,12 +145,30 @@ else
   CLAUDENV_HOME_LINE="export CLAUDENV_HOME=\"${CLAUDENV_HOME}\""
 fi
 
-if grep -qF "$MARKER" "$RC" 2>/dev/null; then
-  printf 'claudenv: already present in %s — skipping.\n' "$RC"
+if [ -n "${CLAUDENV_INSTALL_CONFIRM+x}" ]; then
+  _install_rc="$CLAUDENV_INSTALL_CONFIRM"
+elif [ -t 0 ]; then
+  printf 'Install to %s? [Y/n] ' "$RC"
+  read -r _install_rc
 else
-  printf '\n%s\n%s\n%s\n' "$MARKER" "$CLAUDENV_HOME_LINE" "$SOURCE_LINE" >> "$RC"
-  printf 'Added claudenv to %s\n' "$RC"
+  _install_rc=""
 fi
+
+case "$_install_rc" in
+  [Nn]*)
+    printf 'Skipping shell profile wiring. To set up manually, add to %s:\n' "$RC"
+    printf '  %s\n' "$CLAUDENV_HOME_LINE"
+    printf '  %s\n' "$SOURCE_LINE"
+    ;;
+  *)
+    if grep -qF "$MARKER" "$RC" 2>/dev/null; then
+      printf 'claudenv: already present in %s — skipping.\n' "$RC"
+    else
+      printf '\n%s\n%s\n%s\n' "$MARKER" "$CLAUDENV_HOME_LINE" "$SOURCE_LINE" >> "$RC"
+      printf 'Added claudenv to %s\n' "$RC"
+    fi
+    ;;
+esac
 
 printf '\nDone. Reload your shell:\n'
 printf '  source %s\n\n' "$RC"
