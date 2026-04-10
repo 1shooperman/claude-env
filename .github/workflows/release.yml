@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump type
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress_policy: audit
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          latest=$(git tag --sort=-version:refname \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | head -1)
+          latest="${latest:-v0.0.0}"
+
+          major=$(printf '%s' "$latest" | cut -d. -f1 | tr -d 'v')
+          minor=$(printf '%s' "$latest" | cut -d. -f2)
+          patch=$(printf '%s' "$latest" | cut -d. -f3)
+
+          case "${{ inputs.bump }}" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+
+          echo "version=v${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
+
+      - name: Embed version in install.sh and tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Pin the version in install.sh so the tagged script downloads the
+          # matching claudenv.sh (same pattern as nvm's install script).
+          sed -i "s|^CLAUDENV_VERSION=.*|CLAUDENV_VERSION=\"${VERSION}\"|" install.sh
+          git add install.sh
+          git commit -m "chore: release ${VERSION}"
+          git push origin main
+
+          git tag "${VERSION}"
+          git push origin "${VERSION}"
+
+      - name: Reset install.sh to development version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          sed -i 's|^CLAUDENV_VERSION=.*|CLAUDENV_VERSION="main"|' install.sh
+          git add install.sh
+          git commit -m "chore: restore development version after ${VERSION}"
+          git push origin main
+
+      - name: Create GitHub release
+        run: |
+          gh release create "${{ steps.version.outputs.version }}" \
+            --title "Release ${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            --verify-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

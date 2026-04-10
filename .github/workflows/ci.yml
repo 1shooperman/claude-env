@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_call:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress_policy: audit  # switch to 'enforce' after verifying the allowlist
+          allowed-endpoints: >
+            github.com:443
+            objects.githubusercontent.com:443
+            azure.archive.ubuntu.com:80
+            security.ubuntu.com:80
+
+      - uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Lint install.sh (POSIX sh)
+        run: shellcheck --shell=sh install.sh
+
+      - name: Lint claudenv.sh (bash)
+        run: shellcheck --shell=bash claudenv.sh
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress_policy: audit
+          allowed-endpoints: >
+            github.com:443
+            objects.githubusercontent.com:443
+
+      - uses: actions/checkout@v4
+
+      - name: Install bats-core
+        run: |
+          git clone --depth 1 --branch v1.11.0 \
+            https://github.com/bats-core/bats-core.git /tmp/bats-core
+          sudo /tmp/bats-core/install.sh /usr/local
+
+      - name: Run tests
+        run: bats test/

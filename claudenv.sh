@@ -3,6 +3,7 @@
 #
 # Compatible with: bash 3.2+, zsh (including oh-my-zsh)
 # macOS is the primary target; see GitHub issues for WSL/Windows roadmap.
+# shellcheck shell=bash
 
 CLAUDENV_HOME="${CLAUDENV_HOME:-$HOME/.claudenv}"
 
@@ -152,9 +153,9 @@ _claudenv_pick() {
   PS3="Select env: "
   select name in "${envs[@]}" "(cancel)"; do
     case "$name" in
-      "(cancel)"|"") printf 'Cancelled.\n'; break ;;
-      "")            printf 'Invalid selection.\n' ;;
-      *)             _claudenv_activate "$name"; break ;;
+      "(cancel)") printf 'Cancelled.\n'; break ;;
+      "")         printf 'Invalid selection.\n' ;;
+      *)          _claudenv_activate "$name"; break ;;
     esac
   done
 }

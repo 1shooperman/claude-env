@@ -6,22 +6,41 @@ Modeled after `nvm` / `venv` / `jenv`. macOS-first; see [open issues](https://gi
 
 ---
 
-## How it works
+## Installation
 
-`install.sh` copies `claudenv.sh` to `~/.claudenv/` and sources it from your shell profile. Because it runs as a **shell function** (not a subprocess), it can export environment variables and modify your prompt directly — the same trick `nvm` uses.
+**curl:**
+```sh
+curl -o- https://raw.githubusercontent.com/1shooperman/claude-env/main/install.sh | sh
+```
 
-Each env is a directory under `~/.claudenv/envs/<name>/`. Activating an env sets `CLAUDE_CONFIG_DIR` to that directory, which tells Claude Code to read config and credentials from there instead of the default `~/.claude`.
+**wget:**
+```sh
+wget -qO- https://raw.githubusercontent.com/1shooperman/claude-env/main/install.sh | sh
+```
+
+**Specific version:**
+```sh
+curl -o- https://raw.githubusercontent.com/1shooperman/claude-env/v0.1.0/install.sh | sh
+```
+
+**From a local clone:**
+```sh
+git clone git@github.com:1shooperman/claude-env.git
+sh claude-env/install.sh
+```
+
+After installing, reload your shell:
+```sh
+source ~/.zshrc   # or ~/.bashrc
+```
 
 ---
 
-## Installation
+## How it works
 
-```sh
-git clone git@github.com:1shooperman/claude-env.git
-cd claude-env
-sh install.sh
-source ~/.zshrc   # or ~/.bashrc
-```
+`install.sh` downloads `claudenv.sh` to `~/.claudenv/` and sources it from your shell profile. Because it runs as a **shell function** (not a subprocess), it can export environment variables and modify your prompt directly — the same trick `nvm` uses.
+
+Each env is a directory under `~/.claudenv/envs/<name>/`. Activating an env sets `CLAUDE_CONFIG_DIR` to that directory, which tells Claude Code to read config and credentials from there instead of the default `~/.claude`.
 
 ---
 
@@ -62,4 +81,10 @@ When an env is active, your prompt is prefixed with the env name:
 
 ## Contributing
 
-PRs welcome. The entire tool is plain shell (`claudenv.sh`) — no build step, no dependencies.
+PRs welcome. The entire tool is plain shell (`claudenv.sh`) — no build step, no dependencies. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## Support
+
+If claudenv saves you time, consider [buying me a coffee](https://buymeacoffee.com/aglflorida). ☕
