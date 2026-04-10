@@ -35,32 +35,33 @@ _claudenv_download() {
 }
 
 _claudenv_verify_sha256() {
-  local file="$1" sums_file="$2"
-  local filename expected actual
-
-  filename="$(basename "$file")"
+  _cvs_file="$1"
+  _cvs_sums_file="$2"
+  _cvs_filename="$(basename "$_cvs_file")"
+  _cvs_expected=""
+  _cvs_actual=""
   # sha256sum/shasum output format: "<hash>  <filename>"
-  expected=$(awk -v f="$filename" '$2 == f { print $1 }' "$sums_file" 2>/dev/null)
+  _cvs_expected=$(awk -v f="$_cvs_filename" '$2 == f { print $1 }' "$_cvs_sums_file" 2>/dev/null)
 
-  if [ -z "$expected" ]; then
-    printf 'claudenv: no checksum found for "%s" in SHA256SUMS\n' "$filename" >&2
+  if [ -z "$_cvs_expected" ]; then
+    printf 'claudenv: no checksum found for "%s" in SHA256SUMS\n' "$_cvs_filename" >&2
     return 1
   fi
 
   if command -v sha256sum > /dev/null 2>&1; then
-    actual=$(sha256sum "$file" | awk '{ print $1 }')
+    _cvs_actual=$(sha256sum "$_cvs_file" | awk '{ print $1 }')
   elif command -v shasum > /dev/null 2>&1; then
-    actual=$(shasum -a 256 "$file" | awk '{ print $1 }')
+    _cvs_actual=$(shasum -a 256 "$_cvs_file" | awk '{ print $1 }')
   else
     printf 'claudenv: no sha256 utility found — skipping integrity check\n' >&2
     return 0
   fi
 
-  if [ "$actual" != "$expected" ]; then
-    printf 'claudenv: integrity check FAILED for "%s"\n' "$filename" >&2
-    printf '  expected: %s\n' "$expected" >&2
-    printf '  actual:   %s\n' "$actual" >&2
-    rm -f "$file"
+  if [ "$_cvs_actual" != "$_cvs_expected" ]; then
+    printf 'claudenv: integrity check FAILED for "%s"\n' "$_cvs_filename" >&2
+    printf '  expected: %s\n' "$_cvs_expected" >&2
+    printf '  actual:   %s\n' "$_cvs_actual" >&2
+    rm -f "$_cvs_file"
     return 1
   fi
 

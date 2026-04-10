@@ -167,7 +167,7 @@ teardown() {
 
 @test "remove: removes env directory" {
   mkdir -p "$CLAUDENV_HOME/envs/old"
-  _claudenv_remove "old"
+  _claudenv_remove "old" <<< "y"
   [ ! -d "$CLAUDENV_HOME/envs/old" ]
 }
 
