@@ -4,3 +4,4 @@ SPEC.md
 *.swo
 .idea/
 *.code-workspace
+.docker-image
