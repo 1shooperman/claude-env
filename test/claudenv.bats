@@ -248,3 +248,44 @@ teardown() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"v1.2.3"* ]]
 }
+
+# ── uninstall ─────────────────────────────────────────────────────────────────
+
+@test "uninstall: cancels when answer is n" {
+  _claudenv_uninstall <<< "n"
+  [ -d "$CLAUDENV_HOME" ]
+}
+
+@test "uninstall: removes CLAUDENV_HOME" {
+  local home_path="$CLAUDENV_HOME"
+  _claudenv_uninstall <<< "y"
+  [ ! -d "$home_path" ]
+}
+
+@test "uninstall: deactivates active env first" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  _claudenv_activate "work"
+  _claudenv_uninstall <<< "y"
+  [ -z "${CLAUDENV_ACTIVE:-}" ]
+}
+
+@test "uninstall: removes claudenv block from rc file" {
+  local fake_home
+  fake_home="$(mktemp -d)"
+  printf '\n# claudenv\nexport CLAUDENV_HOME="$HOME/.claudenv"\n. "$HOME/.claudenv/claudenv.sh"\n' \
+    > "$fake_home/.zshrc"
+  HOME="$fake_home" SHELL="/bin/zsh" _claudenv_uninstall <<< "y"
+  ! grep -qF '# claudenv' "$fake_home/.zshrc" 2>/dev/null
+  rm -rf "$fake_home"
+}
+
+@test "uninstall: leaves other rc content intact" {
+  local fake_home
+  fake_home="$(mktemp -d)"
+  printf 'export PATH="$PATH:/usr/local/bin"\n\n# claudenv\nexport CLAUDENV_HOME="$HOME/.claudenv"\n. "$HOME/.claudenv/claudenv.sh"\n\nexport EDITOR=vim\n' \
+    > "$fake_home/.zshrc"
+  HOME="$fake_home" SHELL="/bin/zsh" _claudenv_uninstall <<< "y"
+  grep -qF 'export PATH=' "$fake_home/.zshrc"
+  grep -qF 'export EDITOR=vim' "$fake_home/.zshrc"
+  rm -rf "$fake_home"
+}

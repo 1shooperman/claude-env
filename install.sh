@@ -25,9 +25,15 @@ CLAUDENV_HOME="${CLAUDENV_HOME:-$HOME/.claudenv}"
 
 _claudenv_download() {
   if command -v curl > /dev/null 2>&1; then
-    curl -fsSL "$1" -o "$2"
+    curl -fsSL "$1" -o "$2" || {
+      printf 'claudenv: download failed: %s\n' "$1" >&2
+      return 1
+    }
   elif command -v wget > /dev/null 2>&1; then
-    wget -qO "$2" "$1"
+    wget -qO "$2" "$1" || {
+      printf 'claudenv: download failed: %s\n' "$1" >&2
+      return 1
+    }
   else
     printf 'claudenv: curl or wget is required for remote installation\n' >&2
     return 1
@@ -151,7 +157,7 @@ elif [ -t 0 ]; then
   printf 'Install to %s? [Y/n] ' "$RC"
   read -r _install_rc
 else
-  _install_rc=""
+  _install_rc="n"
 fi
 
 case "$_install_rc" in
