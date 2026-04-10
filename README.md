@@ -18,9 +18,9 @@ curl -o- https://raw.githubusercontent.com/1shooperman/claude-env/main/install.s
 wget -qO- https://raw.githubusercontent.com/1shooperman/claude-env/main/install.sh | sh
 ```
 
-**Specific version:**
+**Specific version** (includes SHA256 integrity check):
 ```sh
-curl -o- https://raw.githubusercontent.com/1shooperman/claude-env/v0.1.0/install.sh | sh
+curl -o- https://github.com/1shooperman/claude-env/releases/download/v0.1.0/install.sh | sh
 ```
 
 **From a local clone:**
@@ -33,6 +33,14 @@ After installing, reload your shell:
 ```sh
 source ~/.zshrc   # or ~/.bashrc
 ```
+
+**oh-my-zsh users:** oh-my-zsh automatically sources any `.zsh` files in `~/.oh-my-zsh/custom/`. You can symlink claudenv there so it loads as part of the normal oh-my-zsh startup — no manual source line in `.zshrc` required:
+
+```sh
+ln -s "$HOME/.claudenv/claudenv.sh" "$HOME/.oh-my-zsh/custom/claudenv.zsh"
+```
+
+Then remove the `# claudenv` block that `install.sh` added to `~/.zshrc` to avoid double-sourcing.
 
 ---
 

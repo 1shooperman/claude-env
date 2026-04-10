@@ -6,8 +6,10 @@ RUN apt-get update -qq \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         bash \
         ca-certificates \
+        curl \
         git \
         shellcheck \
+        xz-utils \
  && git clone --depth 1 --branch "${BATS_VERSION}" \
         https://github.com/bats-core/bats-core.git /tmp/bats-core \
  && /tmp/bats-core/install.sh /usr/local \

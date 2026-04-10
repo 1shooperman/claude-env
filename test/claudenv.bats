@@ -43,6 +43,11 @@ teardown() {
   [ "$status" -eq 1 ]
 }
 
+@test "config: rejects name starting with hyphen" {
+  run _claudenv_config "-badname"
+  [ "$status" -eq 1 ]
+}
+
 # ── activate ──────────────────────────────────────────────────────────────────
 
 @test "activate: sets CLAUDE_CONFIG_DIR" {
@@ -67,6 +72,14 @@ teardown() {
   mkdir -p "$CLAUDENV_HOME/envs/work"
   _claudenv_activate "work"
   [[ "$PS1" == "(work)"* ]]
+}
+
+@test "activate: idempotent when called twice on same env" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  _claudenv_activate "work"
+  _claudenv_activate "work"
+  [ "$CLAUDENV_ACTIVE" = "work" ]
+  [ "$CLAUDE_CONFIG_DIR" = "$CLAUDENV_HOME/envs/work" ]
 }
 
 @test "activate: swaps envs without losing original CLAUDE_CONFIG_DIR" {
@@ -111,6 +124,11 @@ teardown() {
   [ "$status" -eq 1 ]
 }
 
+@test "deactivate --quiet: returns 0 when no env is active" {
+  run _claudenv_deactivate --quiet
+  [ "$status" -eq 0 ]
+}
+
 # ── list ──────────────────────────────────────────────────────────────────────
 
 @test "list: shows configured envs" {
@@ -132,4 +150,45 @@ teardown() {
   run _claudenv_list
   [ "$status" -eq 0 ]
   [[ "$output" == *"No envs"* ]]
+}
+
+@test "list: output is sorted alphabetically" {
+  mkdir -p "$CLAUDENV_HOME/envs/zebra" "$CLAUDENV_HOME/envs/alpha" "$CLAUDENV_HOME/envs/middle"
+  run _claudenv_list
+  [ "$status" -eq 0 ]
+  # Extract env names from output lines, verify alpha ordering
+  local names
+  names=$(printf '%s\n' "$output" | sed 's/^[* ]*//' | tr -d ' ')
+  [ "$(printf '%s\n' "$names" | head -1)" = "alpha" ]
+  [ "$(printf '%s\n' "$names" | tail -1)" = "zebra" ]
+}
+
+# ── remove ────────────────────────────────────────────────────────────────────
+
+@test "remove: removes env directory" {
+  mkdir -p "$CLAUDENV_HOME/envs/old"
+  _claudenv_remove "old" <<< "y"
+  [ ! -d "$CLAUDENV_HOME/envs/old" ]
+}
+
+@test "remove: rejects removing active env" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  _claudenv_activate "work"
+  run _claudenv_remove "work"
+  [ "$status" -eq 1 ]
+  [ -d "$CLAUDENV_HOME/envs/work" ]
+}
+
+@test "remove: fails for nonexistent env" {
+  run _claudenv_remove "ghost"
+  [ "$status" -eq 1 ]
+}
+
+# ── version ───────────────────────────────────────────────────────────────────
+
+@test "version: outputs a string" {
+  printf 'v1.2.3\n' > "$CLAUDENV_HOME/version"
+  run _claudenv_version
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"v1.2.3"* ]]
 }

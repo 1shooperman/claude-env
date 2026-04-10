@@ -5,3 +5,5 @@ SPEC.md
 .idea/
 *.code-workspace
 .docker-image
+
+code-review.md
