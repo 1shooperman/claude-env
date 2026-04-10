@@ -25,7 +25,7 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@v2
         with:
-          egress-policy: enforce
+          egress-policy: block
           allowed-endpoints: >
             api.github.com:443
             github.com:443
