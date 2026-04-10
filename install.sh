@@ -82,6 +82,9 @@ printf 'Installing claudenv %s to %s...\n' "$CLAUDENV_VERSION" "$CLAUDENV_HOME"
 
 mkdir -p "$CLAUDENV_HOME/envs"
 
+# Create the built-in "default" env that maps back to ~/.claude.
+mkdir -p "$CLAUDENV_HOME/envs/default"
+
 if _claudenv_is_remote; then
   if [ "$CLAUDENV_VERSION" = "main" ]; then
     printf 'Downloading claudenv.sh from GitHub (main branch)...\n'

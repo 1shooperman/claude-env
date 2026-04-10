@@ -42,7 +42,12 @@ _claudenv_activate() {
   [ -n "${CLAUDENV_ACTIVE:-}" ] && _claudenv_deactivate --quiet
 
   export _CLAUDENV_OLD_CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-}"
-  export CLAUDE_CONFIG_DIR="$env_dir"
+  # The "default" env maps to the original ~/.claude directory.
+  if [ "$name" = "default" ]; then
+    export CLAUDE_CONFIG_DIR="$HOME/.claude"
+  else
+    export CLAUDE_CONFIG_DIR="$env_dir"
+  fi
   export CLAUDENV_ACTIVE="$name"
 
   _claudenv_prompt_on
@@ -135,10 +140,12 @@ _claudenv_list() {
 
   while IFS= read -r name; do
     found=1
+    local suffix=""
+    [ "$name" = "default" ] && suffix="  (~/.claude)"
     if [ "$name" = "${CLAUDENV_ACTIVE:-}" ]; then
-      printf '* %s\n' "$name"
+      printf '* %s%s\n' "$name" "$suffix"
     else
-      printf '  %s\n' "$name"
+      printf '  %s%s\n' "$name" "$suffix"
     fi
   done < <(_claudenv_list_names)
 
@@ -191,6 +198,8 @@ _claudenv_config() {
   case "$name" in
     "")
       printf 'claudenv: name cannot be empty\n' >&2; return 1 ;;
+    "default")
+      printf 'claudenv: "default" is a reserved env — activate it with: claudenv default\n' >&2; return 1 ;;
     [-_]* | *[^a-zA-Z0-9_-]*)
       printf 'claudenv: invalid name "%s" (must start with a letter or digit; letters, numbers, - and _ only)\n' "$name" >&2; return 1 ;;
   esac
@@ -202,7 +211,7 @@ _claudenv_config() {
     printf 'Activate now? [y/N] '
     read -r yn
     case "$yn" in [Yy]*) _claudenv_activate "$name" ;; esac
-    return
+    return 1
   fi
 
   mkdir -p "$env_dir"
@@ -220,6 +229,11 @@ _claudenv_remove() {
 
   if [ -z "$name" ]; then
     printf 'claudenv: usage: claudenv remove <name>\n' >&2
+    return 1
+  fi
+
+  if [ "$name" = "default" ]; then
+    printf 'claudenv: cannot remove the reserved "default" env\n' >&2
     return 1
   fi
 
