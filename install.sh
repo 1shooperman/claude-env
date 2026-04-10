@@ -65,11 +65,13 @@ else
 fi
 
 MARKER='# claudenv'
+# shellcheck disable=SC2016  # $HOME must not expand here; it is written literally into the rc file
 SOURCE_LINE='. "$HOME/.claudenv/claudenv.sh"'
 
 if grep -qF "$MARKER" "$RC" 2>/dev/null; then
   printf 'claudenv: already present in %s — skipping.\n' "$RC"
 else
+  # shellcheck disable=SC2016  # $HOME must not expand here; written literally into the rc file
   printf '\n%s\nexport CLAUDENV_HOME="$HOME/.claudenv"\n%s\n' \
     "$MARKER" "$SOURCE_LINE" >> "$RC"
   printf 'Added claudenv to %s\n' "$RC"

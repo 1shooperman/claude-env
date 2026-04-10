@@ -99,7 +99,7 @@ _claudenv_prompt_off() {
     # Strip prefix immediately for themes that don't rebuild PROMPT in precmd
     if [ -n "$prev_name" ]; then
       local prefix="(${prev_name}) "
-      PROMPT="${PROMPT#$prefix}"
+      PROMPT="${PROMPT#"$prefix"}"
     fi
   else
     PS1="${_CLAUDENV_OLD_PS1:-}"
@@ -122,10 +122,12 @@ _claudenv_list() {
     else
       printf '  %s\n' "$name"
     fi
-  done < <(find "$envs_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
-           -exec basename {} \; | sort)
+  done < <(find "$envs_dir" -mindepth 1 -maxdepth 1 -type d \
+           -exec basename {} \; 2>/dev/null | sort)
 
-  [ "$found" -eq 0 ] && printf "No envs configured. Run 'claudenv config' to create one.\n"
+  if [ "$found" -eq 0 ]; then
+    printf "No envs configured. Run 'claudenv config' to create one.\n"
+  fi
 }
 
 # ── Interactive picker ────────────────────────────────────────────────────────
@@ -137,8 +139,8 @@ _claudenv_pick() {
 
   while IFS= read -r name; do
     envs+=("$name")
-  done < <(find "$envs_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
-           -exec basename {} \; | sort)
+  done < <(find "$envs_dir" -mindepth 1 -maxdepth 1 -type d \
+           -exec basename {} \; 2>/dev/null | sort)
 
   if [ "${#envs[@]}" -eq 0 ]; then
     printf "No envs configured. Run 'claudenv config' to create one.\n"
