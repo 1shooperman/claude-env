@@ -8,17 +8,9 @@ Modeled after `nvm` / `venv` / `jenv`. macOS-first; see [open issues](https://gi
 
 ## Installation
 
+(includes SHA256 integrity check):
+
 **curl:**
-```sh
-curl -o- https://raw.githubusercontent.com/1shooperman/claude-env/main/install.sh | sh
-```
-
-**wget:**
-```sh
-wget -qO- https://raw.githubusercontent.com/1shooperman/claude-env/main/install.sh | sh
-```
-
-**Specific version** (includes SHA256 integrity check):
 ```sh
 curl -o- https://github.com/1shooperman/claude-env/releases/download/v0.1.2/install.sh | sh
 ```
