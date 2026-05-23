@@ -64,7 +64,21 @@ Each env is a directory under `~/.claudenv/envs/<name>/`. Activating an env sets
 | `claudenv config [name]` | Create a new env |
 | `claudenv list` | List all envs (`*` marks the active one) |
 | `claudenv remove <name>` | Delete an env |
+| `claudenv upgrade <ver>` | Upgrade to a release (e.g. `v1.2.3` or `latest`) |
 | `claudenv uninstall` | Remove claudenv and clean up shell profile |
+| `claudenv help` | Show command reference |
+
+---
+
+## Auto-activation
+
+Place a `.claudenvrc` file containing an env name in any directory:
+
+```sh
+echo "work" > .claudenvrc
+```
+
+claudenv will activate that env automatically when you `cd` into the directory and deactivate it when you leave (if it was auto-activated).
 
 ---
 

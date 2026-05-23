@@ -25,3 +25,7 @@ rm -rf "$CLAUDENV_HOME/envs/test-env"
 ```
 
 Test oh-my-zsh prompt integration by sourcing in an active zsh session with a theme loaded.
+
+## Post PR creation
+
+After you have created a PR, use the `update-docs` local claude skill.
