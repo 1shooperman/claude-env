@@ -17,6 +17,7 @@ claudenv() {
     list)       _claudenv_list ;;
     remove)     _claudenv_remove "${2:-}" ;;
     version)    _claudenv_version ;;
+    upgrade)    _claudenv_upgrade "${2:-}" ;;
     uninstall)  _claudenv_uninstall ;;
     help|-h|--help) _claudenv_help ;;
     "")         _claudenv_pick ;;
@@ -281,6 +282,7 @@ _claudenv_help() {
   printf '  %-30s %s\n' 'claudenv config [name]' 'Create a new env'
   printf '  %-30s %s\n' 'claudenv list'          'List all envs (* marks the active one)'
   printf '  %-30s %s\n' 'claudenv remove <name>' 'Delete an env'
+  printf '  %-30s %s\n' 'claudenv upgrade <ver>' 'Upgrade to a release (e.g. v1.2.3 or latest)'
   printf '  %-30s %s\n' 'claudenv uninstall'     'Remove claudenv and clean up shell profile'
   printf '\nAuto-activation\n\n'
   printf '  Add a .claudenvrc file containing an env name to any directory.\n'
@@ -297,6 +299,91 @@ _claudenv_version() {
   else
     printf 'unknown (reinstall via install.sh to record version)\n'
   fi
+}
+
+# ── Upgrade ───────────────────────────────────────────────────────────────────
+
+_claudenv_upgrade_download() {
+  local url="$1" dest="$2"
+  if command -v curl > /dev/null 2>&1; then
+    curl -fsSL "$url" -o "$dest" 2>/dev/null
+  elif command -v wget > /dev/null 2>&1; then
+    wget -qO "$dest" "$url" 2>/dev/null
+  else
+    printf 'claudenv upgrade: curl or wget is required\n' >&2
+    return 1
+  fi
+}
+
+_claudenv_upgrade() {
+  local target="${1:-}"
+  local CLAUDENV_RELEASE_BASE="https://github.com/1shooperman/claude-env/releases/download"
+  local CLAUDENV_API="https://api.github.com/repos/1shooperman/claude-env/releases/latest"
+
+  if [ -z "$target" ]; then
+    printf 'claudenv upgrade: specify a version or "latest"\n' >&2
+    printf '  Usage: claudenv upgrade v1.2.3\n' >&2
+    printf '         claudenv upgrade latest\n' >&2
+    return 1
+  fi
+
+  if [ "$target" = "latest" ]; then
+    local tmp_json
+    tmp_json="$(mktemp)"
+    if ! _claudenv_upgrade_download "$CLAUDENV_API" "$tmp_json"; then
+      printf 'claudenv upgrade: failed to query GitHub releases\n' >&2
+      rm -f "$tmp_json"
+      return 1
+    fi
+    target="$(awk -F'"' '/"tag_name":/{print $4; exit}' "$tmp_json")"
+    rm -f "$tmp_json"
+    if [ -z "$target" ]; then
+      printf 'claudenv upgrade: could not determine latest release\n' >&2
+      return 1
+    fi
+    printf 'claudenv: latest release is %s\n' "$target"
+  fi
+
+  local tmp_sh tmp_sums
+  tmp_sh="$(mktemp)"
+  tmp_sums="$(mktemp)"
+
+  if ! _claudenv_upgrade_download "${CLAUDENV_RELEASE_BASE}/${target}/claudenv.sh" "$tmp_sh"; then
+    printf 'claudenv upgrade: failed to download claudenv.sh for %s\n' "$target" >&2
+    rm -f "$tmp_sh" "$tmp_sums"
+    return 1
+  fi
+
+  if _claudenv_upgrade_download "${CLAUDENV_RELEASE_BASE}/${target}/SHA256SUMS" "$tmp_sums" 2>/dev/null \
+      && [ -s "$tmp_sums" ]; then
+    local expected actual
+    expected="$(awk '$2 == "claudenv.sh" { print $1 }' "$tmp_sums")"
+    if [ -n "$expected" ]; then
+      if command -v sha256sum > /dev/null 2>&1; then
+        actual="$(sha256sum "$tmp_sh" | awk '{print $1}')"
+      elif command -v shasum > /dev/null 2>&1; then
+        actual="$(shasum -a 256 "$tmp_sh" | awk '{print $1}')"
+      fi
+      if [ -n "${actual:-}" ] && [ "$actual" != "$expected" ]; then
+        printf 'claudenv upgrade: integrity check FAILED for %s\n' "$target" >&2
+        printf '  expected: %s\n' "$expected" >&2
+        printf '  actual:   %s\n' "$actual" >&2
+        rm -f "$tmp_sh" "$tmp_sums"
+        return 1
+      fi
+      [ -n "${actual:-}" ] && printf 'claudenv: integrity check passed\n'
+    fi
+  fi
+  rm -f "$tmp_sums"
+
+  cp "$CLAUDENV_HOME/claudenv.sh" "$CLAUDENV_HOME/claudenv.sh.bak" 2>/dev/null || true
+  mv "$tmp_sh" "$CLAUDENV_HOME/claudenv.sh"
+  chmod 644 "$CLAUDENV_HOME/claudenv.sh"
+  printf '%s\n' "$target" > "$CLAUDENV_HOME/version"
+
+  printf 'claudenv: upgraded to %s\n' "$target"
+  printf 'Reload your shell to apply the update:\n'
+  printf '  source %s/claudenv.sh\n' "$CLAUDENV_HOME"
 }
 
 # ── Uninstall ─────────────────────────────────────────────────────────────────
@@ -344,6 +431,7 @@ _claudenv_uninstall() {
     _claudenv_prompt_hook _claudenv_prompt_on _claudenv_prompt_off \
     _claudenv_list_names _claudenv_list _claudenv_pick \
     _claudenv_config _claudenv_remove _claudenv_version \
+    _claudenv_upgrade_download _claudenv_upgrade \
     _claudenv_help _claudenv_uninstall \
     _claudenv_find_rc _claudenv_auto 2>/dev/null || true
 
