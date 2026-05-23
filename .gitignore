@@ -8,3 +8,7 @@ SPEC.md
 .docker-image
 
 code-review.md
+
+
+wiki/**
+!.gitkeep
