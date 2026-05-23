@@ -37,12 +37,8 @@ This Code of Conduct applies in all community spaces — including the GitHub re
 
 If you experience or witness unacceptable behavior, please report it by:
 
-<!-- TODO: Add your preferred contact method, e.g.:
-  - Opening a private GitHub security advisory
-  - Emailing [your-email@example.com]
--->
-
-> **TODO:** Replace this section with your actual reporting contact method before publishing.
+- Emailing [security@aglflorida.com](mailto:security@aglflorida.com)
+- Opening a [private GitHub security advisory](https://github.com/1shooperman/claude-env/security/advisories/new)
 
 All reports will be handled with discretion. Maintainers are obligated to respect the privacy and safety of the reporter.
 
