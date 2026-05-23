@@ -18,6 +18,7 @@ claudenv() {
     remove)     _claudenv_remove "${2:-}" ;;
     version)    _claudenv_version ;;
     uninstall)  _claudenv_uninstall ;;
+    help|-h|--help) _claudenv_help ;;
     "")         _claudenv_pick ;;
     *)          _claudenv_activate "$1" ;;
   esac
@@ -263,6 +264,19 @@ _claudenv_remove() {
   esac
 }
 
+# ── Help ──────────────────────────────────────────────────────────────────────
+
+_claudenv_help() {
+  printf 'Commands\n\n'
+  printf '  %-30s %s\n' 'claudenv'              'Interactive env picker'
+  printf '  %-30s %s\n' 'claudenv <name>'        'Activate a named env'
+  printf '  %-30s %s\n' 'claudenv deactivate'    'Deactivate the current env'
+  printf '  %-30s %s\n' 'claudenv config [name]' 'Create a new env'
+  printf '  %-30s %s\n' 'claudenv list'          'List all envs (* marks the active one)'
+  printf '  %-30s %s\n' 'claudenv remove <name>' 'Delete an env'
+  printf '  %-30s %s\n' 'claudenv uninstall'     'Remove claudenv and clean up shell profile'
+}
+
 # ── Version ───────────────────────────────────────────────────────────────────
 
 _claudenv_version() {
@@ -309,7 +323,7 @@ _claudenv_uninstall() {
     _claudenv_prompt_hook _claudenv_prompt_on _claudenv_prompt_off \
     _claudenv_list_names _claudenv_list _claudenv_pick \
     _claudenv_config _claudenv_remove _claudenv_version \
-    _claudenv_uninstall 2>/dev/null || true
+    _claudenv_help _claudenv_uninstall 2>/dev/null || true
 
   unset CLAUDENV_HOME CLAUDENV_ACTIVE _CLAUDENV_OLD_CLAUDE_CONFIG_DIR _CLAUDENV_OLD_PS1
 
