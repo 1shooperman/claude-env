@@ -28,6 +28,7 @@ claudenv() {
 
 _claudenv_activate() {
   local name="$1"
+  local auto="${2:-}"
   local env_dir="$CLAUDENV_HOME/envs/$name"
 
   if [ ! -d "$env_dir" ]; then
@@ -52,6 +53,12 @@ _claudenv_activate() {
   fi
   export CLAUDENV_ACTIVE="$name"
 
+  if [ "$auto" = "--auto" ]; then
+    export _CLAUDENV_AUTO=1
+  else
+    unset _CLAUDENV_AUTO
+  fi
+
   _claudenv_prompt_on
 
   printf 'Switched to claudenv: %s\n' "$name"
@@ -74,7 +81,7 @@ _claudenv_deactivate() {
   # Pass active name before unsetting so prompt_off can strip the prefix.
   _claudenv_prompt_off "$CLAUDENV_ACTIVE"
 
-  unset CLAUDENV_ACTIVE _CLAUDENV_OLD_CLAUDE_CONFIG_DIR
+  unset CLAUDENV_ACTIVE _CLAUDENV_OLD_CLAUDE_CONFIG_DIR _CLAUDENV_AUTO
 
   [ "${1:-}" = "--quiet" ] || printf 'claudenv: deactivated\n'
 }
@@ -275,6 +282,10 @@ _claudenv_help() {
   printf '  %-30s %s\n' 'claudenv list'          'List all envs (* marks the active one)'
   printf '  %-30s %s\n' 'claudenv remove <name>' 'Delete an env'
   printf '  %-30s %s\n' 'claudenv uninstall'     'Remove claudenv and clean up shell profile'
+  printf '\nAuto-activation\n\n'
+  printf '  Add a .claudenvrc file containing an env name to any directory.\n'
+  printf '  claudenv will activate that env automatically when you cd into it\n'
+  printf '  and deactivate it when you leave (if it was auto-activated).\n'
 }
 
 # ── Version ───────────────────────────────────────────────────────────────────
@@ -318,14 +329,70 @@ _claudenv_uninstall() {
     printf 'Removed claudenv block from %s\n' "$rc"
   fi
 
+  # Remove chpwd / PROMPT_COMMAND auto-activation hooks.
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    add-zsh-hook -d chpwd _claudenv_auto 2>/dev/null || true
+  else
+    if [ -n "${_CLAUDENV_OLD_PROMPT_COMMAND+x}" ]; then
+      PROMPT_COMMAND="$_CLAUDENV_OLD_PROMPT_COMMAND"
+      unset _CLAUDENV_OLD_PROMPT_COMMAND
+    fi
+  fi
+
   unset -f claudenv \
     _claudenv_activate _claudenv_deactivate \
     _claudenv_prompt_hook _claudenv_prompt_on _claudenv_prompt_off \
     _claudenv_list_names _claudenv_list _claudenv_pick \
     _claudenv_config _claudenv_remove _claudenv_version \
-    _claudenv_help _claudenv_uninstall 2>/dev/null || true
+    _claudenv_help _claudenv_uninstall \
+    _claudenv_find_rc _claudenv_auto 2>/dev/null || true
 
-  unset CLAUDENV_HOME CLAUDENV_ACTIVE _CLAUDENV_OLD_CLAUDE_CONFIG_DIR _CLAUDENV_OLD_PS1
+  unset CLAUDENV_HOME CLAUDENV_ACTIVE _CLAUDENV_AUTO \
+    _CLAUDENV_OLD_CLAUDE_CONFIG_DIR _CLAUDENV_OLD_PS1
 
   printf 'claudenv uninstalled. Open a new shell to finish.\n'
 }
+
+# ── Auto-activation via .claudenvrc ──────────────────────────────────────────
+#
+# Walking up to the filesystem root, finds the nearest .claudenvrc. The file
+# should contain only an env name (whitespace is stripped). On cd, the matching
+# env is activated automatically; leaving the directory tree auto-deactivates
+# it (only if it was auto-activated, not manually activated).
+
+_claudenv_find_rc() {
+  local dir="${PWD}"
+  while [ "$dir" != "/" ]; do
+    [ -f "$dir/.claudenvrc" ] && printf '%s/.claudenvrc\n' "$dir" && return 0
+    dir="${dir%/*}"
+    [ -z "$dir" ] && dir="/"
+  done
+  return 1
+}
+
+_claudenv_auto() {
+  local rc name
+  if rc="$(_claudenv_find_rc 2>/dev/null)"; then
+    name="$(tr -d '[:space:]' < "$rc")"
+    [ -z "$name" ] && return 0
+    [ "$name" = "${CLAUDENV_ACTIVE:-}" ] && return 0
+    _claudenv_activate "$name" --auto
+  elif [ "${_CLAUDENV_AUTO:-}" = "1" ] && [ -n "${CLAUDENV_ACTIVE:-}" ]; then
+    _claudenv_deactivate --quiet
+  fi
+}
+
+# Register the directory-change hook and run once for the initial directory.
+if [ -n "${ZSH_VERSION:-}" ]; then
+  autoload -Uz add-zsh-hook 2>/dev/null
+  add-zsh-hook chpwd _claudenv_auto
+else
+  export _CLAUDENV_OLD_PROMPT_COMMAND="${PROMPT_COMMAND:-}"
+  if [ -z "${PROMPT_COMMAND:-}" ]; then
+    PROMPT_COMMAND="_claudenv_auto"
+  else
+    PROMPT_COMMAND="_claudenv_auto; ${PROMPT_COMMAND}"
+  fi
+fi
+
+_claudenv_auto
