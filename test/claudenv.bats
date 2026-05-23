@@ -9,12 +9,17 @@ setup() {
   mkdir -p "$CLAUDENV_HOME/envs/default"
   # shellcheck disable=SC1091
   source "$BATS_TEST_DIRNAME/../claudenv.sh"
+  # Reset any auto-activation that happened at source time (e.g. from a
+  # .claudenvrc in a parent directory of the test runner).
+  _claudenv_deactivate --quiet 2>/dev/null || true
+  unset _CLAUDENV_AUTO
 }
 
 teardown() {
   rm -rf "$CLAUDENV_HOME"
   unset CLAUDENV_ACTIVE CLAUDE_CONFIG_DIR \
-        _CLAUDENV_OLD_CLAUDE_CONFIG_DIR _CLAUDENV_OLD_PS1
+        _CLAUDENV_OLD_CLAUDE_CONFIG_DIR _CLAUDENV_OLD_PS1 \
+        _CLAUDENV_AUTO _CLAUDENV_OLD_PROMPT_COMMAND
 }
 
 # ── config ────────────────────────────────────────────────────────────────────
@@ -288,4 +293,97 @@ teardown() {
   grep -qF 'export PATH=' "$fake_home/.zshrc"
   grep -qF 'export EDITOR=vim' "$fake_home/.zshrc"
   rm -rf "$fake_home"
+}
+
+# ── .claudenvrc auto-activation ───────────────────────────────────────────────
+
+@test "find_rc: finds .claudenvrc in current directory" {
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  printf 'myenv\n' > "$tmpdir/.claudenvrc"
+  result="$(cd "$tmpdir" && _claudenv_find_rc)"
+  [ "$result" = "$tmpdir/.claudenvrc" ]
+  rm -rf "$tmpdir"
+}
+
+@test "find_rc: finds .claudenvrc in parent directory" {
+  local tmpdir child
+  tmpdir="$(mktemp -d)"
+  child="$tmpdir/sub/dir"
+  mkdir -p "$child"
+  printf 'myenv\n' > "$tmpdir/.claudenvrc"
+  result="$(cd "$child" && _claudenv_find_rc)"
+  [ "$result" = "$tmpdir/.claudenvrc" ]
+  rm -rf "$tmpdir"
+}
+
+@test "find_rc: returns non-zero when no .claudenvrc exists" {
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  run bash -c "source '$BATS_TEST_DIRNAME/../claudenv.sh'; cd '$tmpdir'; _claudenv_find_rc"
+  [ "$status" -ne 0 ]
+  rm -rf "$tmpdir"
+}
+
+@test "auto: activates env named in .claudenvrc" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  local rcfile; rcfile="$(mktemp)"
+  printf 'work\n' > "$rcfile"
+  _claudenv_find_rc() { printf '%s\n' "$rcfile"; }
+  _claudenv_auto
+  unset -f _claudenv_find_rc
+  rm -f "$rcfile"
+  [ "$CLAUDENV_ACTIVE" = "work" ]
+}
+
+@test "auto: sets _CLAUDENV_AUTO when activating from .claudenvrc" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  local rcfile; rcfile="$(mktemp)"
+  printf 'work\n' > "$rcfile"
+  _claudenv_find_rc() { printf '%s\n' "$rcfile"; }
+  _claudenv_auto
+  unset -f _claudenv_find_rc
+  rm -f "$rcfile"
+  [ "${_CLAUDENV_AUTO:-}" = "1" ]
+}
+
+@test "auto: does nothing when env already active" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  _claudenv_activate "work"
+  local rcfile; rcfile="$(mktemp)"
+  printf 'work\n' > "$rcfile"
+  _claudenv_find_rc() { printf '%s\n' "$rcfile"; }
+  run _claudenv_auto
+  unset -f _claudenv_find_rc
+  rm -f "$rcfile"
+  [ -z "$output" ]
+}
+
+@test "auto: deactivates auto-activated env when no .claudenvrc present" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  _claudenv_activate "work" --auto
+  _claudenv_find_rc() { return 1; }
+  _claudenv_auto
+  unset -f _claudenv_find_rc
+  [ -z "${CLAUDENV_ACTIVE:-}" ]
+}
+
+@test "auto: does not deactivate manually-activated env" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  _claudenv_activate "work"
+  unset _CLAUDENV_AUTO
+  _claudenv_find_rc() { return 1; }
+  _claudenv_auto
+  unset -f _claudenv_find_rc
+  [ "$CLAUDENV_ACTIVE" = "work" ]
+}
+
+@test "auto: ignores .claudenvrc with empty content" {
+  local rcfile; rcfile="$(mktemp)"
+  printf '   \n' > "$rcfile"
+  _claudenv_find_rc() { printf '%s\n' "$rcfile"; }
+  _claudenv_auto
+  unset -f _claudenv_find_rc
+  rm -f "$rcfile"
+  [ -z "${CLAUDENV_ACTIVE:-}" ]
 }
