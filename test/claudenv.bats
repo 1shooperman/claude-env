@@ -254,6 +254,113 @@ teardown() {
   [[ "$output" == *"v1.2.3"* ]]
 }
 
+# ── upgrade ───────────────────────────────────────────────────────────────────
+
+@test "upgrade: fails with no argument" {
+  run _claudenv_upgrade ""
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Usage"* ]]
+}
+
+@test "upgrade: installs downloaded claudenv.sh and updates version file" {
+  local fake_sh fake_sums
+  fake_sh="$(mktemp)"
+  printf '# fake claudenv.sh\n' > "$fake_sh"
+
+  # Stub download to simulate a versioned release (no SHA256SUMS)
+  _claudenv_upgrade_download() {
+    local url="$1" dest="$2"
+    case "$url" in
+      */claudenv.sh) cp "$fake_sh" "$dest"; return 0 ;;
+      *)             return 1 ;;  # SHA256SUMS not found
+    esac
+  }
+
+  run _claudenv_upgrade "v9.9.9"
+  rm -f "$fake_sh"
+
+  [ "$status" -eq 0 ]
+  [ "$(cat "$CLAUDENV_HOME/version")" = "v9.9.9" ]
+  [[ "$output" == *"upgraded to v9.9.9"* ]]
+}
+
+@test "upgrade: verifies SHA256 checksum when SHA256SUMS is present" {
+  local fake_sh fake_sums
+  fake_sh="$(mktemp)"
+  printf '# fake claudenv.sh v2\n' > "$fake_sh"
+
+  local checksum
+  if command -v sha256sum > /dev/null 2>&1; then
+    checksum="$(sha256sum "$fake_sh" | awk '{print $1}')"
+  else
+    checksum="$(shasum -a 256 "$fake_sh" | awk '{print $1}')"
+  fi
+
+  _claudenv_upgrade_download() {
+    local url="$1" dest="$2"
+    case "$url" in
+      */claudenv.sh)  cp "$fake_sh" "$dest"; return 0 ;;
+      */SHA256SUMS)   printf '%s  claudenv.sh\n' "$checksum" > "$dest"; return 0 ;;
+    esac
+  }
+
+  run _claudenv_upgrade "v9.9.9"
+  rm -f "$fake_sh"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"integrity check passed"* ]]
+  [[ "$output" == *"upgraded to v9.9.9"* ]]
+}
+
+@test "upgrade: fails when SHA256 checksum does not match" {
+  local fake_sh
+  fake_sh="$(mktemp)"
+  printf '# fake claudenv.sh\n' > "$fake_sh"
+
+  _claudenv_upgrade_download() {
+    local url="$1" dest="$2"
+    case "$url" in
+      */claudenv.sh)  cp "$fake_sh" "$dest"; return 0 ;;
+      */SHA256SUMS)   printf 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef  claudenv.sh\n' > "$dest"; return 0 ;;
+    esac
+  }
+
+  run _claudenv_upgrade "v9.9.9"
+  rm -f "$fake_sh"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"integrity check FAILED"* ]]
+}
+
+@test "upgrade: fails when download of claudenv.sh fails" {
+  _claudenv_upgrade_download() { return 1; }
+  run _claudenv_upgrade "v9.9.9"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"failed to download"* ]]
+}
+
+@test "upgrade: latest resolves tag from API response" {
+  local fake_sh
+  fake_sh="$(mktemp)"
+  printf '# latest claudenv.sh\n' > "$fake_sh"
+
+  _claudenv_upgrade_download() {
+    local url="$1" dest="$2"
+    case "$url" in
+      */releases/latest) printf '{"tag_name":"v2.0.0","name":"Release v2.0.0"}\n' > "$dest"; return 0 ;;
+      */claudenv.sh)     cp "$fake_sh" "$dest"; return 0 ;;
+      *)                 return 1 ;;
+    esac
+  }
+
+  run _claudenv_upgrade "latest"
+  rm -f "$fake_sh"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"v2.0.0"* ]]
+  [ "$(cat "$CLAUDENV_HOME/version")" = "v2.0.0" ]
+}
+
 # ── uninstall ─────────────────────────────────────────────────────────────────
 
 @test "uninstall: cancels when answer is n" {
