@@ -37,7 +37,7 @@ This Code of Conduct applies in all community spaces — including the GitHub re
 
 If you experience or witness unacceptable behavior, please report it by:
 
-- Emailing [brandon.shoop@gmail.com](mailto:brandon.shoop@gmail.com)
+- Emailing [security@aglflorida.com](mailto:security@aglflorida.com)
 - Opening a [private GitHub security advisory](https://github.com/1shooperman/claude-env/security/advisories/new)
 
 All reports will be handled with discretion. Maintainers are obligated to respect the privacy and safety of the reporter.
