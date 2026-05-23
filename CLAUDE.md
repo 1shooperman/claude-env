@@ -14,6 +14,10 @@ Shell environment switcher for Claude Code accounts.
 - **Do not replace apt-installed tools with pinned binary downloads** in `Dockerfile.dev` (e.g. shellcheck stays as `apt-get install shellcheck`).
 - **Do not add update-type guards to `dependabot-automerge.yml`.** All dependabot PRs are auto-merged, not just patch bumps.
 
+## Development constraints
+
+- a new branch and PR should be created per ralph-loop invocation, or any change set.
+
 ## Testing
 
 ```sh
