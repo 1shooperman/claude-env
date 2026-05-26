@@ -496,6 +496,9 @@ if [ -n "${CLAUDENV_ACTIVE:-}" ]; then
   unset _claudenv_expected_dir
 fi
 
+# If a consistent env was inherited, restore the prompt hook for this shell.
+[ -n "${CLAUDENV_ACTIVE:-}" ] && _claudenv_prompt_on
+
 # Register the directory-change hook and run once for the initial directory.
 if [ -n "${ZSH_VERSION:-}" ]; then
   autoload -Uz add-zsh-hook 2>/dev/null
