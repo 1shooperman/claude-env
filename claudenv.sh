@@ -463,12 +463,38 @@ _claudenv_auto() {
   if rc="$(_claudenv_find_rc 2>/dev/null)"; then
     name="$(tr -d '[:space:]' < "$rc")"
     [ -z "$name" ] && return 0
-    [ "$name" = "${CLAUDENV_ACTIVE:-}" ] && return 0
+    if [ "$name" = "${CLAUDENV_ACTIVE:-}" ]; then
+      # Names match but validate CLAUDE_CONFIG_DIR is consistent — inherited
+      # env vars from a parent shell can leave it pointing at the wrong path.
+      local expected
+      if [ "$name" = "default" ]; then
+        expected="$HOME/.claude"
+      else
+        expected="$CLAUDENV_HOME/envs/$name"
+      fi
+      [ "${CLAUDE_CONFIG_DIR:-}" = "$expected" ] && return 0
+    fi
     _claudenv_activate "$name" --auto
   elif [ "${_CLAUDENV_AUTO:-}" = "1" ] && [ -n "${CLAUDENV_ACTIVE:-}" ]; then
     _claudenv_deactivate --quiet
   fi
 }
+
+# On source, clear stale inherited claudenv state so new shells start clean.
+# Sub-shells that don't re-source claudenv.sh keep inherited env vars as-is.
+if [ -n "${CLAUDENV_ACTIVE:-}" ]; then
+  _claudenv_expected_dir=""
+  if [ "$CLAUDENV_ACTIVE" = "default" ]; then
+    _claudenv_expected_dir="$HOME/.claude"
+  else
+    _claudenv_expected_dir="$CLAUDENV_HOME/envs/$CLAUDENV_ACTIVE"
+  fi
+  if [ "${CLAUDE_CONFIG_DIR:-}" != "$_claudenv_expected_dir" ]; then
+    unset CLAUDENV_ACTIVE _CLAUDENV_OLD_CLAUDE_CONFIG_DIR _CLAUDENV_AUTO
+    unset CLAUDE_CONFIG_DIR
+  fi
+  unset _claudenv_expected_dir
+fi
 
 # Register the directory-change hook and run once for the initial directory.
 if [ -n "${ZSH_VERSION:-}" ]; then

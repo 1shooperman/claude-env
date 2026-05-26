@@ -494,3 +494,30 @@ teardown() {
   rm -f "$rcfile"
   [ -z "${CLAUDENV_ACTIVE:-}" ]
 }
+
+@test "auto: re-activates when CLAUDE_CONFIG_DIR is stale despite matching CLAUDENV_ACTIVE" {
+  mkdir -p "$CLAUDENV_HOME/envs/work"
+  # Simulate env-var bleed: CLAUDENV_ACTIVE=work but CLAUDE_CONFIG_DIR is wrong.
+  export CLAUDENV_ACTIVE="work"
+  export CLAUDE_CONFIG_DIR="/wrong/path"
+  local rcfile; rcfile="$(mktemp)"
+  printf 'work\n' > "$rcfile"
+  _claudenv_find_rc() { printf '%s\n' "$rcfile"; }
+  _claudenv_auto
+  unset -f _claudenv_find_rc
+  rm -f "$rcfile"
+  [ "$CLAUDE_CONFIG_DIR" = "$CLAUDENV_HOME/envs/work" ]
+}
+
+@test "auto: re-activates default when CLAUDE_CONFIG_DIR is stale" {
+  # Simulate bleed: CLAUDENV_ACTIVE=default but CLAUDE_CONFIG_DIR points elsewhere.
+  export CLAUDENV_ACTIVE="default"
+  export CLAUDE_CONFIG_DIR="/wrong/path"
+  local rcfile; rcfile="$(mktemp)"
+  printf 'default\n' > "$rcfile"
+  _claudenv_find_rc() { printf '%s\n' "$rcfile"; }
+  _claudenv_auto
+  unset -f _claudenv_find_rc
+  rm -f "$rcfile"
+  [ "$CLAUDE_CONFIG_DIR" = "$HOME/.claude" ]
+}
