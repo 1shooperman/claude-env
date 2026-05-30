@@ -101,10 +101,10 @@ _claudenv_deactivate() {
 
 _claudenv_prompt_hook() {
   local prefix="(${CLAUDENV_ACTIVE}) "
-  case "$PROMPT" in
-    "$prefix"*) ;; # already prefixed — theme didn't rebuild this render
-    *)          PROMPT="${prefix}${PROMPT}" ;;
-  esac
+  # Strip ALL occurrences before prepending once; prevents accumulation when
+  # tools like Python venv insert their own prefix before ours, which shifts
+  # our prefix away from position 0 and breaks the simple starts-with guard.
+  PROMPT="${prefix}${PROMPT//"$prefix"/}"
 }
 
 _claudenv_prompt_on() {
