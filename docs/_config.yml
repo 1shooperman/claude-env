@@ -1,0 +1,14 @@
+title: claudenv
+description: Switch between Claude Code accounts the same way you switch Python envs or Node versions.
+remote_theme: just-the-docs/just-the-docs@v0.10.1
+url: https://1shooperman.github.io
+baseurl: /claude-env
+
+plugins:
+  - jekyll-remote-theme
+
+search_enabled: true
+heading_anchors: true
+color_scheme: dark
+
+footer_content: "MIT License &mdash; <a href=\"https://github.com/1shooperman/claude-env\">1shooperman/claude-env</a>"
