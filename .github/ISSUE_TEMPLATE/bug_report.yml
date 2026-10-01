@@ -1,0 +1,54 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. source claudenv.sh
+        2. claudenv config foo
+        3. claudenv foo
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS and version
+      placeholder: macOS 14.5
+    validations:
+      required: true
+
+  - type: input
+    id: shell
+    attributes:
+      label: Shell and version
+      placeholder: zsh 5.9 (output of `zsh --version` / `bash --version`)
+    validations:
+      required: true
+
+  - type: input
+    id: prompt-framework
+    attributes:
+      label: Prompt framework / theme
+      description: e.g. oh-my-zsh, starship, none
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Relevant config, output, or screenshots
+    validations:
+      required: false
