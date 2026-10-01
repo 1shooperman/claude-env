@@ -1,4 +1,5 @@
 name: Release
+run-name: "Deploy Functions: ${{ inputs.bump }}"
 
 on:
   workflow_dispatch:
