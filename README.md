@@ -86,6 +86,8 @@ When an env is active, your prompt is prefixed with the env name:
 
 > **Note:** Powerlevel10k uses its own async rendering pipeline. See [#3](https://github.com/1shooperman/claude-env/issues/3) for p10k support.
 
+**iTerm2 badge**: to show the active env as an iTerm2 badge, and to keep new split panes from showing a stale one, see the [FAQ](https://1shooperman.github.io/claude-env/faq).
+
 ---
 
 ## Known limitations / Roadmap
